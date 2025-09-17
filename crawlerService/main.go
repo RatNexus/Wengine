@@ -8,7 +8,6 @@ import (
 	"sync"
 )
 
-// TODO: add a build script
 // TODO: add config save and load functionality for crw and main packages
 // TODO: add cli handling
 // TODO: add database handling

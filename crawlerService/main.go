@@ -12,6 +12,7 @@ import (
 // TODO: add cli handling
 // TODO: add database handling
 // TODO: get rid of placeholders here
+// TODO: make sure the logger flags are sane
 
 func logReport(pages map[string]string, baseURL string, logger *log.Logger) {
 	logger.Println("=============================")
@@ -28,7 +29,6 @@ func logReport(pages map[string]string, baseURL string, logger *log.Logger) {
 }
 
 func main() {
-
 	pages := make(map[string]string)
 	mu := sync.Mutex{}
 
@@ -47,43 +47,49 @@ func main() {
 		mu.Unlock()
 		return exists, nil
 	}
-	var lc *LoggingConfig
 
-	lc = &LoggingConfig{}
-	lc.LoggingOptions = crw.LoggingOptions{
-		DoLogging:    true,
-		DoStart:      true,
-		DoEnd:        true,
-		DoPageAbyss:  false,
-		DoDepthAbyss: false,
-		DoDepth:      true,
-		DoWidth:      true,
-		DoErrors:     true,
-		DoPages:      true,
+	lc := MakeDefaultLogConfig()
+	writer, file, err := lc.GetLogWriter()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	lc.SetDefultLogFileOptions()
-	lc.LogToFile = false
-	lc.LogToScreen = true
+	if file != nil {
+		defer file.Close()
+	}
 
 	prefix := ""
 	flag := log.Ldate | log.Ltime | log.Lshortfile
-	writer, err := lc.GetLogWriter()
-	if err != nil {
-		fmt.Print(err)
-	}
 	logger := log.New(writer, prefix, flag)
 
-	// Why not use lo directly? So it can be saved and retrieved as JSON more easily.
-	// This is a setup for an abstraction to be added later.
 	page := "https://crawler-test.com/"
-	cfg, err := crw.ConfigSetup(1, 10, 10, page, logger, &lc.LoggingOptions,
-		storePage, isPageStored)
+	ccfg := crw.Config{
+		BaseURL:       page,
+		MaxDepth:      1,
+		MaxPages:      10,
+		MaxGoroutines: 10, // Todo: make 10 the default in crawler lib
+
+		LoggingOptions: &crw.LoggingOptions{
+			DoLogging:    true,
+			DoStart:      true,
+			DoEnd:        true,
+			DoPageAbyss:  false,
+			DoDepthAbyss: false,
+			DoDepth:      true,
+			DoWidth:      true,
+			DoErrors:     true,
+			DoPages:      true,
+		},
+		Logger: logger,
+	}
+
+	crawler, err := ccfg.MakeCrawler(storePage, isPageStored)
 	if err != nil {
 		fmt.Print(err)
 		os.Exit(1)
 	}
 
-	cfg.CrawlPage(page)
+	crawler.CrawlPage(page)
 
 	logReport(pages, page, logger)
 }

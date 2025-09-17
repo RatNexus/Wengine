@@ -6,13 +6,9 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	crw "github.com/RatNexus/CrawlerGoLib"
 )
 
 type LoggingConfig struct {
-	crw.LoggingOptions `json:"crawlerLoggingOptions"`
-
 	LogsFolder string `json:"logsFolder"`
 	LogName    string `json:"logName"`
 	DateSuffix string `json:"dateSuffix"`
@@ -21,31 +17,34 @@ type LoggingConfig struct {
 	LogToScreen bool `json:"logToScreen"`
 }
 
-func (lc *LoggingConfig) SetDefultLogFileOptions() {
+func MakeDefaultLogConfig() (lc *LoggingConfig) {
 	lc.LogsFolder = "/tmp/protoCrawler/logs"
 	lc.LogName = "crawler"
 	lc.DateSuffix = "2006-01-02_15:04:05"
+	lc.LogToFile = false
+	lc.LogToScreen = true
+	return lc
 }
 
-func (lc *LoggingConfig) GetLogWriter() (io.Writer, error) {
+func (lc *LoggingConfig) GetLogWriter() (io.Writer, *os.File, error) {
 	if lc.LogToScreen && lc.LogToFile {
-		return io.Discard, nil
+		return io.Discard, nil, nil
 	}
 
 	if lc.LogToScreen && !lc.LogToFile {
-		return os.Stdout, nil
+		return os.Stdout, nil, nil
 	}
 
 	if !lc.LogToScreen && lc.LogToFile {
 		file, err := lc.GetLogFile()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		return file, nil
+		return file, file, nil
 	}
 
-	return io.Discard, nil
+	return io.Discard, nil, nil
 }
 
 func (lc *LoggingConfig) GetLogFile() (Lf *os.File, err error) {

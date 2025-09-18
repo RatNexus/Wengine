@@ -18,6 +18,7 @@ type LoggingConfig struct {
 }
 
 func MakeDefaultLogConfig() (lc *LoggingConfig) {
+	lc = &LoggingConfig{}
 	lc.LogsFolder = "/tmp/protoCrawler/logs"
 	lc.LogName = "crawler"
 	lc.DateSuffix = "2006-01-02_15:04:05"
